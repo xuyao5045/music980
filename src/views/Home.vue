@@ -110,7 +110,7 @@ const prevMusic = () => {
 const scrollToComments = () => {
   const commentsSection = document.querySelector('.comments-section')
   if (commentsSection) {
-    commentsSection.scrollIntoView({ behavior: 'smooth' })
+    commentsSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
     showCommentForm.value = true
   }
 }
