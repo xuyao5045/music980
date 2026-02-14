@@ -154,10 +154,12 @@ const uploadMusic = async () => {
   font-size: 1rem;
   transition: background-color 0.3s ease;
   margin: 20px 0;
+  text-decoration: none;
 }
 
 .btn:hover {
   background-color: #0069d9;
+  text-decoration: none;
 }
 
 .btn:disabled {

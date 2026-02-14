@@ -4,7 +4,6 @@
       <div class="container">
         <router-link to="/" class="logo">Music980</router-link>
         <nav class="nav-links">
-          <router-link to="/">首页</router-link>
           <router-link to="/upload">上传音乐</router-link>
           <template v-if="isLoggedIn">
             <span class="user-info">欢迎，{{ user?.username }}</span>
@@ -12,7 +11,6 @@
           </template>
           <template v-else>
             <router-link to="/login">登录</router-link>
-            <router-link to="/register">注册</router-link>
           </template>
         </nav>
       </div>

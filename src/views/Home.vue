@@ -1,36 +1,54 @@
 <template>
-  <div class="home-container" @wheel="handleWheel">
-    <div v-if="currentMusic" class="music-card">
-      <div class="cover">
-        <img :src="currentMusic.cover_url ? `http://localhost:3000${currentMusic.cover_url}` : '/default-cover.jpg'" :alt="currentMusic.title">
+  <div class="home-container">
+    <div v-if="currentMusic" class="content-wrapper">
+      <!-- 右侧：上下切换按钮 -->
+      <div class="music-controls">
+        <button class="control-btn" @click="prevMusic" title="上一首">↑</button>
+        <button class="control-btn" @click="nextMusic" title="下一首">↓</button>
       </div>
-      <h1 class="title">{{ currentMusic.title }}</h1>
-      <p class="artist">{{ currentMusic.artist }}</p>
-      <div class="music-info">
-        <span class="uploader">上传者: {{ currentMusic.uploader_username }}</span>
-        <span class="likes">{{ currentMusic.like_count }} 点赞</span>
+      <!-- 左侧：歌曲信息 -->
+      <div class="music-info-section">
+        <div class="cover">
+          <img :src="currentMusic.cover_url ? `http://localhost:3000${currentMusic.cover_url}` : '/default-cover.jpg'" :alt="currentMusic.title">
+        </div>
+        <h1 class="title">{{ currentMusic.title }}</h1>
+        <p class="artist">{{ currentMusic.artist }}</p>
+        <div class="music-info">
+          <span class="uploader">上传者: {{ currentMusic.uploader_username }}</span>
+          <span class="likes">{{ currentMusic.like_count }} 点赞</span>
+        </div>
+        <div class="actions">
+          <button class="btn" @click="toggleLike" :class="{ 'liked': isLiked }">
+            {{ isLiked ? '已点赞' : '点赞' }}
+          </button>
+          <button class="btn" @click="scrollToComments">评论</button>
+        </div>
+        <audio ref="audioRef" :src="`http://localhost:3000${currentMusic.file_url}`" @ended="nextMusic" controls autoplay>
+          您的浏览器不支持音频播放
+        </audio>
       </div>
-      <div class="actions">
-        <button class="btn" @click="toggleLike" :class="{ 'liked': isLiked }">
-          {{ isLiked ? '已点赞' : '点赞' }}
-        </button>
-        <button class="btn" @click="toggleComment">评论</button>
-      </div>
-      <audio ref="audioRef" :src="`http://localhost:3000${currentMusic.file_url}`" @ended="nextMusic" controls autoplay>
-        您的浏览器不支持音频播放
-      </audio>
       
-      <div v-if="showComments" class="comments-section">
+      <!-- 右侧：评论区 -->
+      <div class="comments-section">
         <h3>评论</h3>
-        <div v-if="isLoggedIn">
-          <textarea v-model="newComment" placeholder="写下您的评论..."></textarea>
-          <button class="btn" @click="postComment">发布评论</button>
+        
+        <!-- 评论表单：只有点击评论按钮时才显示 -->
+        <div v-if="showCommentForm">
+          <div v-if="isLoggedIn">
+            <textarea v-model="newComment" placeholder="写下您的评论..."></textarea>
+            <button class="btn" @click="postComment">发布评论</button>
+          </div>
+          <div v-else class="login-tip">
+            请先登录后再评论
+          </div>
         </div>
-        <div v-else class="login-tip">
-          请先登录后再评论
-        </div>
+        
+        <!-- 评论列表 -->
         <div class="comment-list">
-          <div v-for="comment in comments" :key="comment.id" class="comment-item">
+          <div v-if="comments.length === 0" class="no-comments">
+            暂无评论
+          </div>
+          <div v-else v-for="comment in comments" :key="comment.id" class="comment-item">
             <span class="comment-user">{{ comment.username }}:</span>
             <span class="comment-content">{{ comment.content }}</span>
             <span class="comment-time">{{ formatTime(comment.created_at) }}</span>
@@ -56,7 +74,7 @@ import axios from 'axios'
 const musicStore = useMusicStore()
 const userStore = useUserStore()
 const audioRef = ref(null)
-const showComments = ref(false)
+const showCommentForm = ref(false)
 const newComment = ref('')
 const comments = ref([])
 const isLiked = ref(false)
@@ -81,16 +99,20 @@ watch(currentMusic, async (newMusic) => {
   }
 })
 
-const handleWheel = (event) => {
-  if (event.deltaY > 0) {
-    musicStore.nextMusic()
-  } else {
-    musicStore.prevMusic()
-  }
-}
-
 const nextMusic = () => {
   musicStore.nextMusic()
+}
+
+const prevMusic = () => {
+  musicStore.prevMusic()
+}
+
+const scrollToComments = () => {
+  const commentsSection = document.querySelector('.comments-section')
+  if (commentsSection) {
+    commentsSection.scrollIntoView({ behavior: 'smooth' })
+    showCommentForm.value = true
+  }
 }
 
 const toggleLike = async () => {
@@ -131,9 +153,7 @@ const checkLikeStatus = async () => {
   }
 }
 
-const toggleComment = () => {
-  showComments.value = !showComments.value
-}
+
 
 const fetchComments = async () => {
   if (!currentMusic.value) return
@@ -160,6 +180,8 @@ const postComment = async () => {
     })
     newComment.value = ''
     await fetchComments()
+    // 保持评论表单显示状态，方便用户继续发表评论
+    showCommentForm.value = true
   } catch (error) {
     console.error('发布评论失败:', error)
   }
@@ -184,62 +206,124 @@ const formatTime = (timeString) => {
 }
 </script>
 
+<style>
+/* 全局样式：禁止整个页面滚动 */
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  height: 100%;
+}
+</style>
+
 <style scoped>
 .home-container {
   height: 100vh;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   background-color: #f5f5f5;
   overflow: hidden;
+  padding: 25px 20px 20px;
+  box-sizing: border-box;
 }
 
-.music-card {
+.content-wrapper {
+  display: flex;
+  gap: 30px;
   background: white;
   border-radius: 12px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
   padding: 40px;
-  text-align: center;
-  max-width: 500px;
-  width: 90%;
-  transition: transform 0.3s ease;
+  max-width: 1000px;
+  width: 100%;
+  max-height: calc(100vh - 20px);
+  overflow: hidden;
+  position: relative;
+  box-sizing: border-box;
 }
 
-.music-card:hover {
-  transform: translateY(-5px);
+/* 上下切换按钮 */
+.music-controls {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.control-btn {
+  width: 40px;
+  height: 40px;
+  border: 1px solid #ddd;
+  border-radius: 50%;
+  background-color: white;
+  color: #333;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.control-btn:hover {
+  background-color: #f0f0f0;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transform: scale(1.05);
+}
+
+.control-btn:active {
+  transform: scale(0.95);
+}
+
+/* 左侧：歌曲信息 */
+.music-info-section {
+  flex: 1;
+  min-width: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
 }
 
 .cover {
   width: 200px;
   height: 200px;
-  margin: 0 auto 30px;
+  margin: 0 auto 20px;
   border-radius: 50%;
   overflow: hidden;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
 }
 
 .cover img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
 }
 
 .title {
-  font-size: 2rem;
+  font-size: 1.6rem;
   margin: 0 0 10px;
   color: #333;
 }
 
 .artist {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   color: #666;
-  margin: 0 0 20px;
+  margin: 0 0 18px;
 }
 
 .music-info {
   display: flex;
   justify-content: space-between;
-  margin: 20px 0;
+  width: 100%;
+  margin: 15px 0;
   font-size: 0.9rem;
   color: #999;
 }
@@ -248,18 +332,23 @@ const formatTime = (timeString) => {
   display: flex;
   gap: 15px;
   justify-content: center;
-  margin: 20px 0;
+  margin: 15px 0;
 }
 
 .btn {
   padding: 10px 20px;
   border: none;
-  border-radius: 20px;
+  border-radius: 25px;
   background-color: #007bff;
   color: white;
   cursor: pointer;
   font-size: 1rem;
   transition: background-color 0.3s ease;
+}
+
+audio {
+  width: 100%;
+  margin: 15px 0;
 }
 
 .btn:hover {
@@ -274,48 +363,61 @@ const formatTime = (timeString) => {
   background-color: #218838;
 }
 
-audio {
-  width: 100%;
-  margin: 20px 0;
-}
-
+/* 右侧：评论区 */
 .comments-section {
-  margin-top: 30px;
-  text-align: left;
+  flex: 1;
+  min-width: 300px;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
 }
 
 .comments-section h3 {
-  margin: 0 0 15px;
+  margin: 0 0 12px;
   color: #333;
+  font-size: 1.1rem;
 }
 
 textarea {
   width: 100%;
-  padding: 10px;
+  padding: 8px;
   border: 1px solid #ddd;
   border-radius: 8px;
   resize: vertical;
-  min-height: 100px;
-  margin-bottom: 10px;
+  min-height: 80px;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
 }
 
 .login-tip {
   color: #999;
   font-style: italic;
-  margin: 10px 0;
+  margin: 8px 0;
+  font-size: 0.85rem;
 }
 
 .comment-list {
-  margin-top: 20px;
+  margin-top: 12px;
+  flex: 1;
+  overflow-y: hidden;
+}
+
+.no-comments {
+  color: #999;
+  text-align: center;
+  padding: 30px 0;
+  font-style: italic;
+  font-size: 0.9rem;
 }
 
 .comment-item {
-  padding: 10px;
+  padding: 8px;
   border-bottom: 1px solid #eee;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  font-size: 0.85rem;
 }
 
 .comment-user {
@@ -350,5 +452,17 @@ textarea {
 .loading {
   font-size: 1.5rem;
   color: #666;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .content-wrapper {
+    flex-direction: column;
+    max-height: none;
+  }
+  
+  .comments-section {
+    max-width: none;
+  }
 }
 </style>

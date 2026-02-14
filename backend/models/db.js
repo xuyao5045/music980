@@ -24,6 +24,8 @@ const initDB = async () => {
   }
 }
 
+const bcrypt = require('bcrypt')
+
 const createTables = async () => {
   const connection = await pool.getConnection()
   
@@ -38,6 +40,23 @@ const createTables = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `)
+    
+    // 添加 is_admin 字段（如果不存在）
+    try {
+      // 检查 is_admin 字段是否存在
+      const [columns] = await connection.execute(
+        'SELECT column_name FROM information_schema.columns WHERE table_schema = ? AND table_name = ? AND column_name = ?',
+        [config.db.database, 'user', 'is_admin']
+      )
+      
+      // 如果字段不存在，则添加
+      if (columns.length === 0) {
+        await connection.execute('ALTER TABLE user ADD COLUMN is_admin TINYINT DEFAULT 0')
+        console.log('is_admin 字段添加成功')
+      }
+    } catch (error) {
+      console.error('添加 is_admin 字段失败:', error)
+    }
     
     // 音乐表
     await connection.execute(`
@@ -77,6 +96,14 @@ const createTables = async () => {
         FOREIGN KEY (user_id) REFERENCES user(id)
       )
     `)
+    
+    // 创建管理员账号（如果不存在）
+    const [adminExists] = await connection.execute('SELECT * FROM user WHERE username = ?', ['admin'])
+    if (adminExists.length === 0) {
+      const hashedPassword = await bcrypt.hash('admin123', 10)
+      await connection.execute('INSERT INTO user (username, password, is_admin) VALUES (?, ?, ?)', ['admin', hashedPassword, 1])
+      console.log('管理员账号创建成功: 用户名 admin, 密码 admin123')
+    }
     
     console.log('数据库表创建成功')
   } catch (error) {

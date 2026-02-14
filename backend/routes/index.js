@@ -3,7 +3,8 @@ const authController = require('../controllers/authController')
 const musicController = require('../controllers/musicController')
 const likeController = require('../controllers/likeController')
 const commentController = require('../controllers/commentController')
-const auth = require('../middleware/auth')
+const adminController = require('../controllers/adminController')
+const { auth, adminAuth } = require('../middleware/auth')
 
 const router = express.Router()
 
@@ -25,5 +26,13 @@ router.get('/like/check', auth, likeController.checkLikeStatus)
 router.post('/comments', auth, commentController.postComment)
 router.get('/comments', commentController.getComments)
 router.delete('/comments/:id', auth, commentController.deleteComment)
+
+// 管理员路由
+router.get('/admin/users', adminAuth, adminController.getUsers)
+router.delete('/admin/users/:id', adminAuth, adminController.deleteUser)
+router.get('/admin/comments', adminAuth, adminController.getComments)
+router.delete('/admin/comments/:id', adminAuth, adminController.deleteComment)
+router.get('/admin/music', adminAuth, adminController.getMusic)
+router.delete('/admin/music/:id', adminAuth, adminController.deleteMusic)
 
 module.exports = router

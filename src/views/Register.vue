@@ -1,17 +1,19 @@
 <template>
-  <div class="login-container">
-    <div class="login-form">
-      <h1>登录</h1>
+  <div class="register-container">
+    <div class="register-form">
+      <h1>注册</h1>
       <div class="form-group">
-        <label for="username">用户名/邮箱</label>
+        <label for="username">用户名</label>
         <input type="text" id="username" v-model="form.username" required>
+        <p v-if="errors.username" class="error-message">{{ errors.username }}</p>
       </div>
       <div class="form-group">
         <label for="password">密码</label>
         <input type="password" id="password" v-model="form.password" required>
+        <p v-if="errors.password" class="error-message">{{ errors.password }}</p>
       </div>
-      <button class="btn" @click="login">登录</button>
-      <p class="register-link">还没有账号？<router-link to="/register">立即注册</router-link></p>
+      <button class="btn" @click="register">注册</button>
+      <p class="login-link">已有账号？<router-link to="/login">立即登录</router-link></p>
     </div>
   </div>
 </template>
@@ -19,31 +21,61 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useUserStore } from '../stores/userStore'
 import axios from 'axios'
 
 const router = useRouter()
-const userStore = useUserStore()
 const form = ref({
   username: '',
   password: ''
 })
+const errors = ref({})
 
-const login = async () => {
+const validateForm = () => {
+  let isValid = true
+  errors.value = {}
+  
+  // 验证用户名：2-10个字符
+  if (form.value.username.length < 2 || form.value.username.length > 10) {
+    errors.value.username = '用户名长度必须在2-10个字符之间'
+    isValid = false
+  }
+  
+  // 验证密码：3-20个字符
+  if (form.value.password.length < 3 || form.value.password.length > 20) {
+    errors.value.password = '密码长度必须在3-20个字符之间'
+    isValid = false
+  }
+  
+  return isValid
+}
+
+const register = async () => {
+  if (!validateForm()) {
+    return
+  }
+  
   try {
-    const response = await axios.post('http://localhost:3000/api/auth/login', form.value)
-    userStore.setToken(response.data.token)
-    await userStore.fetchUser()
-    router.push('/')
+    await axios.post('http://localhost:3000/api/auth/register', form.value)
+    alert('注册成功，请登录')
+    router.push('/login')
   } catch (error) {
-    console.error('登录失败:', error)
-    alert('登录失败，请检查用户名和密码')
+    console.error('注册失败:', error)
+    alert('注册失败，请稍后重试')
   }
 }
 </script>
 
 <style scoped>
-.login-container {
+.error-message {
+  color: #dc3545;
+  font-size: 0.8rem;
+  margin: 5px 0 0;
+  text-align: left;
+}
+</style>
+
+<style scoped>
+.register-container {
   height: 100vh;
   display: flex;
   justify-content: center;
@@ -51,7 +83,7 @@ const login = async () => {
   background-color: #f5f5f5;
 }
 
-.login-form {
+.register-form {
   background: white;
   border-radius: 12px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
@@ -60,7 +92,7 @@ const login = async () => {
   max-width: 400px;
 }
 
-.login-form h1 {
+.register-form h1 {
   margin: 0 0 30px;
   text-align: center;
   color: #333;
@@ -101,18 +133,18 @@ const login = async () => {
   background-color: #0069d9;
 }
 
-.register-link {
+.login-link {
   text-align: center;
   margin: 0;
   color: #666;
 }
 
-.register-link a {
+.login-link a {
   color: #007bff;
   text-decoration: none;
 }
 
-.register-link a:hover {
+.login-link a:hover {
   text-decoration: underline;
 }
 </style>

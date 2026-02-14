@@ -10,6 +10,16 @@ const authController = {
     const pool = getPool()
     
     try {
+      // 验证用户名长度：2-10个字符
+      if (username.length < 2 || username.length > 10) {
+        return res.status(400).json({ error: '用户名长度必须在2-10个字符之间' })
+      }
+      
+      // 验证密码长度：3-20个字符
+      if (password.length < 3 || password.length > 20) {
+        return res.status(400).json({ error: '密码长度必须在3-20个字符之间' })
+      }
+      
       // 检查用户名是否已存在
       const [existingUser] = await pool.execute('SELECT * FROM user WHERE username = ?', [username])
       if (existingUser.length > 0) {
@@ -51,12 +61,12 @@ const authController = {
       
       // 生成 JWT 令牌
       const token = jwt.sign(
-        { id: user.id, username: user.username },
+        { id: user.id, username: user.username, is_admin: user.is_admin },
         config.jwt.secret,
         { expiresIn: config.jwt.expiresIn }
       )
       
-      res.json({ token, user: { id: user.id, username: user.username, avatar: user.avatar } })
+      res.json({ token, user: { id: user.id, username: user.username, avatar: user.avatar, is_admin: user.is_admin } })
     } catch (error) {
       console.error('登录失败:', error)
       res.status(500).json({ error: '登录失败' })

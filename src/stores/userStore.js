@@ -18,6 +18,7 @@ export const useUserStore = defineStore('user', {
       this.user = null
       this.isLoggedIn = false
       localStorage.removeItem('token')
+      localStorage.removeItem('user')
     },
     async fetchUser() {
       if (this.token) {
@@ -28,9 +29,12 @@ export const useUserStore = defineStore('user', {
             }
           })
           this.user = response.data
+          localStorage.setItem('user', JSON.stringify(response.data))
           this.isLoggedIn = true
         } catch (error) {
-          this.logout()
+          console.error('获取用户信息失败:', error)
+          // 暂时不登出，保留登录状态
+          // this.logout()
         }
       }
     }
