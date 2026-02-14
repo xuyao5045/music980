@@ -7,7 +7,11 @@ const adminController = {
     
     try {
       const [users] = await pool.execute('SELECT id, username, created_at FROM user')
-      res.json(users)
+      // 移除ID字段
+      const usersWithoutId = users.map(user => ({
+        username: user.username
+      }))
+      res.json(usersWithoutId)
     } catch (error) {
       console.error('获取用户列表失败:', error)
       res.status(500).json({ error: '获取用户列表失败' })
@@ -72,7 +76,14 @@ const adminController = {
         JOIN music m ON c.music_id = m.id
         ORDER BY c.created_at DESC
       `)
-      res.json(comments)
+      // 移除ID字段
+      const commentsWithoutId = comments.map(comment => ({
+        content: comment.content,
+        created_at: comment.created_at,
+        username: comment.username,
+        music_title: comment.music_title
+      }))
+      res.json(commentsWithoutId)
     } catch (error) {
       console.error('获取评论列表失败:', error)
       res.status(500).json({ error: '获取评论列表失败' })
@@ -109,7 +120,13 @@ const adminController = {
         JOIN user u ON m.uploader_id = u.id
         ORDER BY m.created_at DESC
       `)
-      res.json(music)
+      // 移除ID字段
+      const musicWithoutId = music.map(song => ({
+        title: song.title,
+        artist: song.artist,
+        uploader_username: song.uploader_username
+      }))
+      res.json(musicWithoutId)
     } catch (error) {
       console.error('获取歌曲列表失败:', error)
       res.status(500).json({ error: '获取歌曲列表失败' })

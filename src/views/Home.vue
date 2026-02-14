@@ -130,9 +130,14 @@ const toggleLike = async () => {
         Authorization: `Bearer ${userStore.token}`
       }
     })
+    // 更新点赞状态
     isLiked.value = !isLiked.value
-    // 重新获取音乐信息以更新点赞数
-    await musicStore.fetchRandomMusic()
+    // 更新点赞数
+    if (isLiked.value) {
+      currentMusic.value.like_count++
+    } else {
+      currentMusic.value.like_count--
+    }
   } catch (error) {
     console.error('点赞失败:', error)
   }
@@ -237,8 +242,8 @@ html, body {
   padding: 40px;
   max-width: 1000px;
   width: 100%;
-  max-height: calc(100vh - 20px);
-  overflow: hidden;
+  height: 600px;
+  overflow: auto;
   position: relative;
   box-sizing: border-box;
 }
@@ -252,6 +257,7 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  z-index: 10;
 }
 
 .control-btn {
@@ -398,8 +404,9 @@ textarea {
 
 .comment-list {
   margin-top: 12px;
-  flex: 1;
-  overflow-y: hidden;
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 10px;
 }
 
 .no-comments {

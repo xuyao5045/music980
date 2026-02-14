@@ -5,6 +5,24 @@ let pool
 
 const initDB = async () => {
   try {
+    // 先创建一个不带 database 参数的连接池，用于创建数据库
+    const tempPool = mysql.createPool({
+      host: config.db.host,
+      user: config.db.user,
+      password: config.db.password,
+      waitForConnections: true,
+      connectionLimit: 10,
+      queueLimit: 0
+    })
+    
+    // 创建数据库（如果不存在）
+    const tempConnection = await tempPool.getConnection()
+    await tempConnection.execute(`CREATE DATABASE IF NOT EXISTS ${config.db.database}`)
+    tempConnection.release()
+    tempPool.end()
+    console.log('数据库创建/连接成功')
+    
+    // 连接到创建的数据库
     pool = mysql.createPool({
       host: config.db.host,
       user: config.db.user,
@@ -14,12 +32,11 @@ const initDB = async () => {
       connectionLimit: 10,
       queueLimit: 0
     })
-    console.log('数据库连接成功')
     
     // 创建数据库表
     await createTables()
   } catch (error) {
-    console.error('数据库连接失败:', error)
+    console.error('数据库初始化失败:', error)
     process.exit(1)
   }
 }

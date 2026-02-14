@@ -25,14 +25,12 @@
         <table class="admin-table">
           <thead>
             <tr>
-              <th>ID</th>
               <th>用户名</th>
               <th>操作</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="user in filteredUsers" :key="user.id">
-              <td>{{ user.id }}</td>
               <td>{{ user.username }}</td>
               <td>
                 <button class="delete-btn" @click="deleteUser(user.id)">删除</button>
@@ -51,7 +49,6 @@
         <table class="admin-table">
           <thead>
             <tr>
-              <th>ID</th>
               <th>用户</th>
               <th>歌曲</th>
               <th>内容</th>
@@ -61,7 +58,6 @@
           </thead>
           <tbody>
             <tr v-for="comment in filteredComments" :key="comment.id">
-              <td>{{ comment.id }}</td>
               <td>{{ comment.username }}</td>
               <td>{{ comment.music_title }}</td>
               <td>{{ comment.content }}</td>
@@ -83,7 +79,6 @@
         <table class="admin-table">
           <thead>
             <tr>
-              <th>ID</th>
               <th>标题</th>
               <th>艺术家</th>
               <th>上传者</th>
@@ -92,7 +87,6 @@
           </thead>
           <tbody>
             <tr v-for="song in filteredMusic" :key="song.id">
-              <td>{{ song.id }}</td>
               <td>{{ song.title }}</td>
               <td>{{ song.artist }}</td>
               <td>{{ song.uploader_username }}</td>
@@ -294,15 +288,19 @@ onMounted(() => {
 .admin-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 10px 20px;
+  height: 600px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .admin-nav {
   display: flex;
   gap: 10px;
-  margin: 20px 0;
+  margin: 10px 0;
   border-bottom: 1px solid #ddd;
-  padding-bottom: 10px;
+  padding-bottom: 5px;
 }
 
 .nav-btn {
@@ -323,8 +321,16 @@ onMounted(() => {
   color: white;
 }
 
+.admin-content {
+  margin-top: 10px;
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 10px;
+  padding-bottom: 20px;
+}
+
 .tab-content {
-  margin-top: 20px;
+  margin-top: 5px;
 }
 
 .search-bar {
