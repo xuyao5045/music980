@@ -22,4 +22,8 @@
 ## 管理员账号
 - 账号：admin
 - 密码：admin123
-- http://localhost:5173/admin进入管理页面
+- 进入管理页面：http://localhost:5173/admin
+
+## 测试账号
+- 账号：test01
+- 密码：111111
