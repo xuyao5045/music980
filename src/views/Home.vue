@@ -9,7 +9,7 @@
       <!-- 左侧：歌曲信息 -->
       <div class="music-info-section">
         <div class="cover">
-          <img :src="currentMusic.cover_url ? `http://localhost:3000${currentMusic.cover_url}` : '/default-cover.jpg'" :alt="currentMusic.title">
+          <img :src="getResourceUrl(currentMusic.cover_url) || '/default-cover.jpg'" :alt="currentMusic.title">
         </div>
         <h1 class="title">{{ currentMusic.title }}</h1>
         <p class="artist">{{ currentMusic.artist }}</p>
@@ -23,9 +23,9 @@
           </button>
           <button class="btn" @click="scrollToComments">评论</button>
         </div>
-        <audio ref="audioRef" :src="`http://localhost:3000${currentMusic.file_url}`" @ended="nextMusic" controls autoplay>
+        <audio ref="audioRef" :src="getResourceUrl(currentMusic.file_url)" @ended="nextMusic" controls autoplay>
           您的浏览器不支持音频播放
-        </audio>
+         </audio>
       </div>
       
       <!-- 右侧：评论区 -->
@@ -69,7 +69,8 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useMusicStore } from '../stores/musicStore'
 import { useUserStore } from '../stores/userStore'
-import axios from 'axios'
+import request from '../utils/request'
+import { API_ENDPOINTS, getResourceUrl } from '../config/api'
 
 const musicStore = useMusicStore()
 const userStore = useUserStore()
@@ -123,21 +124,12 @@ const toggleLike = async () => {
   }
   
   try {
-    await axios.post('http://localhost:3000/api/like', {
+    await request.post(API_ENDPOINTS.LIKE.TOGGLE, {
       music_id: currentMusic.value.id
-    }, {
-      headers: {
-        Authorization: `Bearer ${userStore.token}`
-      }
     })
-    // 更新点赞状态
     isLiked.value = !isLiked.value
-    // 更新点赞数
-    if (isLiked.value) {
-      currentMusic.value.like_count++
-    } else {
-      currentMusic.value.like_count--
-    }
+    // 重新获取音乐信息以更新点赞数
+    await musicStore.fetchRandomMusic()
   } catch (error) {
     console.error('点赞失败:', error)
   }
@@ -147,25 +139,19 @@ const checkLikeStatus = async () => {
   if (!isLoggedIn.value || !currentMusic.value) return
   
   try {
-    const response = await axios.get(`http://localhost:3000/api/like/check?music_id=${currentMusic.value.id}`, {
-      headers: {
-        Authorization: `Bearer ${userStore.token}`
-      }
-    })
-    isLiked.value = response.data.is_liked
+    const response = await request.get(`${API_ENDPOINTS.LIKE.CHECK}?music_id=${currentMusic.value.id}`)
+    isLiked.value = response.is_liked
   } catch (error) {
     console.error('检查点赞状态失败:', error)
   }
 }
 
-
-
 const fetchComments = async () => {
   if (!currentMusic.value) return
   
   try {
-    const response = await axios.get(`http://localhost:3000/api/comments?music_id=${currentMusic.value.id}`)
-    comments.value = response.data
+    const response = await request.get(`${API_ENDPOINTS.COMMENT.LIST}?music_id=${currentMusic.value.id}`)
+    comments.value = response
   } catch (error) {
     console.error('获取评论失败:', error)
   }
@@ -175,13 +161,9 @@ const postComment = async () => {
   if (!newComment.value.trim()) return
   
   try {
-    await axios.post('http://localhost:3000/api/comments', {
+    await request.post(API_ENDPOINTS.COMMENT.CREATE, {
       music_id: currentMusic.value.id,
       content: newComment.value
-    }, {
-      headers: {
-        Authorization: `Bearer ${userStore.token}`
-      }
     })
     newComment.value = ''
     await fetchComments()
@@ -194,11 +176,7 @@ const postComment = async () => {
 
 const deleteComment = async (commentId) => {
   try {
-    await axios.delete(`http://localhost:3000/api/comments/${commentId}`, {
-      headers: {
-        Authorization: `Bearer ${userStore.token}`
-      }
-    })
+    await request.delete(`${API_ENDPOINTS.COMMENT.DELETE}/${commentId}`)
     await fetchComments()
   } catch (error) {
     console.error('删除评论失败:', error)

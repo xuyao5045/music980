@@ -35,7 +35,8 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../stores/userStore'
-import axios from 'axios'
+import request from '../utils/request'
+import { API_ENDPOINTS } from '../config/api'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -74,10 +75,9 @@ const uploadMusic = async () => {
   isUploading.value = true
   
   try {
-    await axios.post('http://localhost:3000/api/music/upload', formData, {
+    await request.post(API_ENDPOINTS.MUSIC.UPLOAD, formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
-        Authorization: `Bearer ${userStore.token}`
+        'Content-Type': 'multipart/form-data'
       }
     })
     alert('上传成功！')

@@ -104,7 +104,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
+import request from '../utils/request'
+import { API_ENDPOINTS } from '../config/api'
 
 const router = useRouter()
 const activeTab = ref('users')
@@ -148,12 +149,8 @@ const filteredMusic = computed(() => {
 // 获取所有用户
 const fetchUsers = async () => {
   try {
-    const response = await axios.get('http://localhost:3000/api/admin/users', {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      }
-    })
-    users.value = response.data
+    const response = await request.get(API_ENDPOINTS.ADMIN.USERS)
+    users.value = response
   } catch (error) {
     console.error('获取用户列表失败:', error)
     handleAuthError(error)
@@ -163,12 +160,8 @@ const fetchUsers = async () => {
 // 获取所有评论
 const fetchComments = async () => {
   try {
-    const response = await axios.get('http://localhost:3000/api/admin/comments', {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      }
-    })
-    comments.value = response.data
+    const response = await request.get(API_ENDPOINTS.ADMIN.COMMENTS)
+    comments.value = response
   } catch (error) {
     console.error('获取评论列表失败:', error)
     handleAuthError(error)
@@ -178,12 +171,8 @@ const fetchComments = async () => {
 // 获取所有歌曲
 const fetchMusic = async () => {
   try {
-    const response = await axios.get('http://localhost:3000/api/admin/music', {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      }
-    })
-    music.value = response.data
+    const response = await request.get(API_ENDPOINTS.ADMIN.MUSIC)
+    music.value = response
   } catch (error) {
     console.error('获取歌曲列表失败:', error)
     handleAuthError(error)
@@ -195,11 +184,7 @@ const deleteUser = async (userId) => {
   if (!confirm('确定要删除这个用户吗？')) return
   
   try {
-    await axios.delete(`http://localhost:3000/api/admin/users/${userId}`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      }
-    })
+    await request.delete(`${API_ENDPOINTS.ADMIN.DELETE_USER}/${userId}`)
     users.value = users.value.filter(user => user.id !== userId)
     alert('用户删除成功')
   } catch (error) {
@@ -213,11 +198,7 @@ const deleteComment = async (commentId) => {
   if (!confirm('确定要删除这个评论吗？')) return
   
   try {
-    await axios.delete(`http://localhost:3000/api/admin/comments/${commentId}`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      }
-    })
+    await request.delete(`${API_ENDPOINTS.ADMIN.DELETE_COMMENT}/${commentId}`)
     comments.value = comments.value.filter(comment => comment.id !== commentId)
     alert('评论删除成功')
   } catch (error) {
@@ -231,11 +212,7 @@ const deleteMusic = async (musicId) => {
   if (!confirm('确定要删除这首歌吗？')) return
   
   try {
-    await axios.delete(`http://localhost:3000/api/admin/music/${musicId}`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      }
-    })
+    await request.delete(`${API_ENDPOINTS.ADMIN.DELETE_MUSIC}/${musicId}`)
     music.value = music.value.filter(song => song.id !== musicId)
     alert('歌曲删除成功')
   } catch (error) {

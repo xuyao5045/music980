@@ -21,7 +21,8 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
+import request from '../utils/request'
+import { API_ENDPOINTS } from '../config/api'
 
 const router = useRouter()
 const form = ref({
@@ -55,7 +56,7 @@ const register = async () => {
   }
   
   try {
-    await axios.post('http://localhost:3000/api/auth/register', form.value)
+    await request.post(API_ENDPOINTS.AUTH.REGISTER, form.value)
     alert('注册成功，请登录')
     router.push('/login')
   } catch (error) {

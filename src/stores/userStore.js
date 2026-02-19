@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
-import axios from 'axios'
+import request from '../utils/request'
+import { API_ENDPOINTS } from '../config/api'
 
 export const useUserStore = defineStore('user', {
   state: () => ({
@@ -23,13 +24,9 @@ export const useUserStore = defineStore('user', {
     async fetchUser() {
       if (this.token) {
         try {
-          const response = await axios.get('http://localhost:3000/api/user', {
-            headers: {
-              Authorization: `Bearer ${this.token}`
-            }
-          })
-          this.user = response.data
-          localStorage.setItem('user', JSON.stringify(response.data))
+          const user = await request.get(API_ENDPOINTS.USER.INFO)
+          this.user = user
+          localStorage.setItem('user', JSON.stringify(user))
           this.isLoggedIn = true
         } catch (error) {
           console.error('获取用户信息失败:', error)

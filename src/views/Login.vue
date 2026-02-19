@@ -20,7 +20,8 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../stores/userStore'
-import axios from 'axios'
+import request from '../utils/request'
+import { API_ENDPOINTS } from '../config/api'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -31,10 +32,10 @@ const form = ref({
 
 const login = async () => {
   try {
-    const response = await axios.post('http://localhost:3000/api/auth/login', form.value)
-    userStore.setToken(response.data.token)
-    userStore.user = response.data.user
-    localStorage.setItem('user', JSON.stringify(response.data.user))
+    const result = await request.post(API_ENDPOINTS.AUTH.LOGIN, form.value)
+    userStore.setToken(result.token)
+    userStore.user = result.user
+    localStorage.setItem('user', JSON.stringify(result.user))
     router.push('/')
   } catch (error) {
     console.error('登录失败:', error)
