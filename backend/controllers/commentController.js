@@ -3,12 +3,25 @@ const { getPool } = require('../models/db')
 const commentController = {
   // 发布评论
   async postComment(req, res) {
-    const { music_id, content } = req.body
+    const { music_id, content } = req.body || {}
     const user_id = req.user.id
     const pool = getPool()
-    
+
     try {
-      await pool.execute('INSERT INTO comment (music_id, user_id, content) VALUES (?, ?, ?)', [music_id, user_id, content])
+      if (!music_id || typeof content !== 'string' || !content.trim()) {
+        return res.status(400).json({ error: '评论内容不能为空' })
+      }
+      if (content.trim().length > 500) {
+        return res.status(400).json({ error: '评论内容不能超过500个字符' })
+      }
+
+      // 确认音乐存在，避免外键错误
+      const [musics] = await pool.execute('SELECT id FROM music WHERE id = ?', [music_id])
+      if (musics.length === 0) {
+        return res.status(404).json({ error: '音乐不存在' })
+      }
+
+      await pool.execute('INSERT INTO comment (music_id, user_id, content) VALUES (?, ?, ?)', [music_id, user_id, content.trim()])
       res.status(201).json({ message: '评论发布成功' })
     } catch (error) {
       console.error('发布评论失败:', error)
@@ -20,8 +33,12 @@ const commentController = {
   async getComments(req, res) {
     const { music_id } = req.query
     const pool = getPool()
-    
+
     try {
+      if (!music_id) {
+        return res.status(400).json({ error: '缺少 music_id 参数' })
+      }
+
       const [comments] = await pool.execute(`
         SELECT 
           c.id, c.content, c.created_at, c.user_id,

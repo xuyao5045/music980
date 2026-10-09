@@ -39,4 +39,12 @@ __screenshots__/
 *.timestamp-*-*.mjs
 
 # Uploads
-# uploads/
+uploads/
+backend/uploads/
+
+# WorkBuddy 工作区数据
+.workbuddy/
+
+# Environment variables (含数据库密码、JWT 密钥，绝不能提交)
+.env
+backend/.env

@@ -6,8 +6,7 @@ export const useMusicStore = defineStore('music', {
   state: () => ({
     currentMusic: null,
     musicList: [],
-    currentIndex: 0,
-    isPlaying: false
+    currentIndex: 0
   }),
   actions: {
     async fetchRandomMusic() {
@@ -33,9 +32,6 @@ export const useMusicStore = defineStore('music', {
         this.currentIndex = (this.currentIndex - 1 + this.musicList.length) % this.musicList.length
         this.currentMusic = this.musicList[this.currentIndex]
       }
-    },
-    setPlaying(status) {
-      this.isPlaying = status
     }
   }
 })

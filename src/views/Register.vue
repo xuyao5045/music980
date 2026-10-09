@@ -2,17 +2,19 @@
   <div class="register-container">
     <div class="register-form">
       <h1>注册</h1>
-      <div class="form-group">
-        <label for="username">用户名</label>
-        <input type="text" id="username" v-model="form.username" required>
-        <p v-if="errors.username" class="error-message">{{ errors.username }}</p>
-      </div>
-      <div class="form-group">
-        <label for="password">密码</label>
-        <input type="password" id="password" v-model="form.password" required>
-        <p v-if="errors.password" class="error-message">{{ errors.password }}</p>
-      </div>
-      <button class="btn" @click="register">注册</button>
+      <form @submit.prevent="register">
+        <div class="form-group">
+          <label for="username">用户名</label>
+          <input type="text" id="username" v-model.trim="form.username" required>
+          <p v-if="errors.username" class="error-message">{{ errors.username }}</p>
+        </div>
+        <div class="form-group">
+          <label for="password">密码</label>
+          <input type="password" id="password" v-model="form.password" required>
+          <p v-if="errors.password" class="error-message">{{ errors.password }}</p>
+        </div>
+        <button type="submit" class="btn" :disabled="isSubmitting">{{ isSubmitting ? '注册中...' : '注册' }}</button>
+      </form>
       <p class="login-link">已有账号？<router-link to="/login">立即登录</router-link></p>
     </div>
   </div>
@@ -30,6 +32,7 @@ const form = ref({
   password: ''
 })
 const errors = ref({})
+const isSubmitting = ref(false)
 
 const validateForm = () => {
   let isValid = true
@@ -41,9 +44,9 @@ const validateForm = () => {
     isValid = false
   }
   
-  // 验证密码：3-20个字符
-  if (form.value.password.length < 3 || form.value.password.length > 20) {
-    errors.value.password = '密码长度必须在3-20个字符之间'
+  // 验证密码：6-20个字符
+  if (form.value.password.length < 6 || form.value.password.length > 20) {
+    errors.value.password = '密码长度必须在6-20个字符之间'
     isValid = false
   }
   
@@ -51,17 +54,20 @@ const validateForm = () => {
 }
 
 const register = async () => {
-  if (!validateForm()) {
+  if (!validateForm() || isSubmitting.value) {
     return
   }
-  
+
+  isSubmitting.value = true
   try {
     await request.post(API_ENDPOINTS.AUTH.REGISTER, form.value)
     alert('注册成功，请登录')
     router.push('/login')
   } catch (error) {
     console.error('注册失败:', error)
-    alert('注册失败，请稍后重试')
+    alert(error.response?.data?.error || '注册失败，请稍后重试')
+  } finally {
+    isSubmitting.value = false
   }
 }
 </script>
@@ -73,11 +79,9 @@ const register = async () => {
   margin: 5px 0 0;
   text-align: left;
 }
-</style>
 
-<style scoped>
 .register-container {
-  height: 100vh;
+  height: calc(100vh - 60px);
   display: flex;
   justify-content: center;
   align-items: center;

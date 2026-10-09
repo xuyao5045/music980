@@ -34,12 +34,16 @@ request.interceptors.response.use(
   },
   (error) => {
     if (error.response) {
+      // 登录/注册接口返回 401 属于正常的"密码错误"，不能清登录态并跳转
+      const isAuthRequest = /\/api\/auth\/(login|register)/.test(error.config?.url || '')
       switch (error.response.status) {
         case 401:
-          console.error('未授权，请重新登录')
-          localStorage.removeItem('token')
-          localStorage.removeItem('user')
-          window.location.href = '/login'
+          if (!isAuthRequest) {
+            console.error('未授权，请重新登录')
+            localStorage.removeItem('token')
+            localStorage.removeItem('user')
+            window.location.href = '/login'
+          }
           break
         case 403:
           console.error('拒绝访问')

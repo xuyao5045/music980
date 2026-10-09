@@ -1,4 +1,6 @@
 const mysql = require('mysql2/promise')
+const bcrypt = require('bcrypt')
+const crypto = require('crypto')
 const config = require('../config/config')
 
 let pool
@@ -41,11 +43,21 @@ const initDB = async () => {
   }
 }
 
-const bcrypt = require('bcrypt')
+// 确保某张表存在某个字段，缺失则 ALTER TABLE 补齐（兼容旧版本数据库）
+const ensureColumn = async (connection, table, column, definition) => {
+  const [columns] = await connection.execute(
+    'SELECT column_name FROM information_schema.columns WHERE table_schema = ? AND table_name = ? AND column_name = ?',
+    [config.db.database, table, column]
+  )
+  if (columns.length === 0) {
+    await connection.execute(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`)
+    console.log(`${table}.${column} 字段添加成功`)
+  }
+}
 
 const createTables = async () => {
   const connection = await pool.getConnection()
-  
+
   try {
     // 用户表
     await connection.execute(`
@@ -53,27 +65,12 @@ const createTables = async () => {
         id INT AUTO_INCREMENT PRIMARY KEY,
         username VARCHAR(50) UNIQUE NOT NULL,
         password VARCHAR(100) NOT NULL,
-        avatar VARCHAR(255) DEFAULT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `)
-    
-    // 添加 is_admin 字段（如果不存在）
-    try {
-      // 检查 is_admin 字段是否存在
-      const [columns] = await connection.execute(
-        'SELECT column_name FROM information_schema.columns WHERE table_schema = ? AND table_name = ? AND column_name = ?',
-        [config.db.database, 'user', 'is_admin']
-      )
-      
-      // 如果字段不存在，则添加
-      if (columns.length === 0) {
-        await connection.execute('ALTER TABLE user ADD COLUMN is_admin TINYINT DEFAULT 0')
-        console.log('is_admin 字段添加成功')
-      }
-    } catch (error) {
-      console.error('添加 is_admin 字段失败:', error)
-    }
+
+    // 兼容旧库：补齐后加的字段（CREATE TABLE IF NOT EXISTS 不会更新已有表结构）
+    await ensureColumn(connection, 'user', 'is_admin', 'TINYINT DEFAULT 0')
     
     // 音乐表
     await connection.execute(`
@@ -114,12 +111,14 @@ const createTables = async () => {
       )
     `)
     
-    // 创建管理员账号（如果不存在）
+    // 创建管理员账号（如果不存在），密码来自环境变量 ADMIN_PASSWORD；
+    // 未配置时生成随机密码并打印一次，避免使用人尽皆知的默认密码
     const [adminExists] = await connection.execute('SELECT * FROM user WHERE username = ?', ['admin'])
     if (adminExists.length === 0) {
-      const hashedPassword = await bcrypt.hash('admin123', 10)
+      const adminPassword = config.adminPassword || crypto.randomBytes(9).toString('base64url')
+      const hashedPassword = await bcrypt.hash(adminPassword, 10)
       await connection.execute('INSERT INTO user (username, password, is_admin) VALUES (?, ?, ?)', ['admin', hashedPassword, 1])
-      console.log('管理员账号创建成功: 用户名 admin, 密码 admin123')
+      console.log(`管理员账号创建成功: 用户名 admin，初始密码 ${adminPassword}（仅显示这一次，请立即登录并修改）`)
     }
     
     console.log('数据库表创建成功')

@@ -37,9 +37,14 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   // 检查是否需要管理员权限
   if (to.matched.some(record => record.meta.requiresAdmin)) {
-    // 获取本地存储中的用户信息
-    const user = JSON.parse(localStorage.getItem('user'))
-    
+    // 获取本地存储中的用户信息（数据损坏时按未登录处理）
+    let user = null
+    try {
+      user = JSON.parse(localStorage.getItem('user'))
+    } catch (e) {
+      user = null
+    }
+
     // 检查用户是否登录且是管理员
     if (!user || !user.is_admin) {
       // 重定向到登录页面

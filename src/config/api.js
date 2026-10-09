@@ -30,14 +30,11 @@ export const API_ENDPOINTS = {
     CREATE: '/api/comments',
     DELETE: '/api/comments'
   },
-  // 管理员相关
+  // 管理员相关（列表与删除共用端点，方法不同）
   ADMIN: {
     USERS: '/api/admin/users',
     COMMENTS: '/api/admin/comments',
-    MUSIC: '/api/admin/music',
-    DELETE_USER: '/api/admin/users',
-    DELETE_COMMENT: '/api/admin/comments',
-    DELETE_MUSIC: '/api/admin/music'
+    MUSIC: '/api/admin/music'
   }
 }
 

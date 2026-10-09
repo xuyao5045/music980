@@ -26,14 +26,17 @@
           <thead>
             <tr>
               <th>用户名</th>
+              <th>角色</th>
               <th>操作</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="user in filteredUsers" :key="user.id">
               <td>{{ user.username }}</td>
+              <td>{{ user.is_admin ? '管理员' : '普通用户' }}</td>
               <td>
-                <button class="delete-btn" @click="deleteUser(user.id)">删除</button>
+                <button v-if="!user.is_admin" class="delete-btn" @click="deleteUser(user.id)">删除</button>
+                <span v-else class="protected-tip">受保护</span>
               </td>
             </tr>
           </tbody>
@@ -102,12 +105,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, watch } from 'vue'
 import request from '../utils/request'
+import { formatTime } from '../utils/format'
 import { API_ENDPOINTS } from '../config/api'
 
-const router = useRouter()
 const activeTab = ref('users')
 const searchUsers = ref('')
 const searchComments = ref('')
@@ -146,14 +148,13 @@ const filteredMusic = computed(() => {
   )
 })
 
-// 获取所有用户
+// 获取所有用户（401 由 axios 拦截器统一跳转登录页）
 const fetchUsers = async () => {
   try {
     const response = await request.get(API_ENDPOINTS.ADMIN.USERS)
     users.value = response
   } catch (error) {
     console.error('获取用户列表失败:', error)
-    handleAuthError(error)
   }
 }
 
@@ -164,7 +165,6 @@ const fetchComments = async () => {
     comments.value = response
   } catch (error) {
     console.error('获取评论列表失败:', error)
-    handleAuthError(error)
   }
 }
 
@@ -175,67 +175,55 @@ const fetchMusic = async () => {
     music.value = response
   } catch (error) {
     console.error('获取歌曲列表失败:', error)
-    handleAuthError(error)
   }
 }
+
+// 提取后端返回的错误信息
+const errorMessage = (error, fallback) => error.response?.data?.error || fallback
 
 // 删除用户
 const deleteUser = async (userId) => {
   if (!confirm('确定要删除这个用户吗？')) return
-  
+
   try {
-    await request.delete(`${API_ENDPOINTS.ADMIN.DELETE_USER}/${userId}`)
+    await request.delete(`${API_ENDPOINTS.ADMIN.USERS}/${userId}`)
     users.value = users.value.filter(user => user.id !== userId)
     alert('用户删除成功')
   } catch (error) {
     console.error('删除用户失败:', error)
-    alert('删除用户失败')
+    alert(errorMessage(error, '删除用户失败'))
   }
 }
 
 // 删除评论
 const deleteComment = async (commentId) => {
   if (!confirm('确定要删除这个评论吗？')) return
-  
+
   try {
-    await request.delete(`${API_ENDPOINTS.ADMIN.DELETE_COMMENT}/${commentId}`)
+    await request.delete(`${API_ENDPOINTS.ADMIN.COMMENTS}/${commentId}`)
     comments.value = comments.value.filter(comment => comment.id !== commentId)
     alert('评论删除成功')
   } catch (error) {
     console.error('删除评论失败:', error)
-    alert('删除评论失败')
+    alert(errorMessage(error, '删除评论失败'))
   }
 }
 
 // 删除歌曲
 const deleteMusic = async (musicId) => {
   if (!confirm('确定要删除这首歌吗？')) return
-  
+
   try {
-    await request.delete(`${API_ENDPOINTS.ADMIN.DELETE_MUSIC}/${musicId}`)
+    await request.delete(`${API_ENDPOINTS.ADMIN.MUSIC}/${musicId}`)
     music.value = music.value.filter(song => song.id !== musicId)
     alert('歌曲删除成功')
   } catch (error) {
     console.error('删除歌曲失败:', error)
-    alert('删除歌曲失败')
+    alert(errorMessage(error, '删除歌曲失败'))
   }
 }
 
-// 处理认证错误
-const handleAuthError = (error) => {
-  if (error.response && error.response.status === 401) {
-    alert('请先登录管理员账号')
-    router.push('/login')
-  }
-}
-
-// 格式化时间
-const formatTime = (timeString) => {
-  const date = new Date(timeString)
-  return date.toLocaleString()
-}
-
-// 切换标签时重新获取数据
+// 按当前标签获取数据
 const fetchDataByTab = () => {
   if (activeTab.value === 'users') {
     fetchUsers()
@@ -246,14 +234,8 @@ const fetchDataByTab = () => {
   }
 }
 
-// 监听标签切换
-activeTab.value = 'users'
-fetchDataByTab()
-activeTab.value = 'comments'
-fetchDataByTab()
-activeTab.value = 'music'
-fetchDataByTab()
-activeTab.value = 'users'
+// 切换标签时重新获取数据
+watch(activeTab, fetchDataByTab)
 
 // 页面加载时获取数据
 onMounted(() => {
@@ -360,5 +342,10 @@ onMounted(() => {
 
 .delete-btn:hover {
   background: #c82333;
+}
+
+.protected-tip {
+  color: #999;
+  font-size: 0.85rem;
 }
 </style>

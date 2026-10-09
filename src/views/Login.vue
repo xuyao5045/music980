@@ -2,15 +2,17 @@
   <div class="login-container">
     <div class="login-form">
       <h1>登录</h1>
-      <div class="form-group">
-        <label for="username">用户名</label>
-        <input type="text" id="username" v-model="form.username" required>
-      </div>
-      <div class="form-group">
-        <label for="password">密码</label>
-        <input type="password" id="password" v-model="form.password" required>
-      </div>
-      <button class="btn" @click="login">登录</button>
+      <form @submit.prevent="login">
+        <div class="form-group">
+          <label for="username">用户名</label>
+          <input type="text" id="username" v-model="form.username" required>
+        </div>
+        <div class="form-group">
+          <label for="password">密码</label>
+          <input type="password" id="password" v-model="form.password" required>
+        </div>
+        <button type="submit" class="btn" :disabled="isSubmitting">{{ isSubmitting ? '登录中...' : '登录' }}</button>
+      </form>
       <p class="register-link">还没有账号？<router-link to="/register">立即注册</router-link></p>
     </div>
   </div>
@@ -29,24 +31,32 @@ const form = ref({
   username: '',
   password: ''
 })
+const isSubmitting = ref(false)
 
 const login = async () => {
+  if (isSubmitting.value) return
+  isSubmitting.value = true
   try {
-    const result = await request.post(API_ENDPOINTS.AUTH.LOGIN, form.value)
+    const result = await request.post(API_ENDPOINTS.AUTH.LOGIN, {
+      username: form.value.username.trim(),
+      password: form.value.password
+    })
     userStore.setToken(result.token)
     userStore.user = result.user
     localStorage.setItem('user', JSON.stringify(result.user))
     router.push('/')
   } catch (error) {
     console.error('登录失败:', error)
-    alert('登录失败，请检查用户名和密码')
+    alert(error.response?.data?.error || '登录失败，请检查用户名和密码')
+  } finally {
+    isSubmitting.value = false
   }
 }
 </script>
 
 <style scoped>
 .login-container {
-  height: 100vh;
+  height: calc(100vh - 60px);
   display: flex;
   justify-content: center;
   align-items: center;

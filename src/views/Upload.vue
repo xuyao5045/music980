@@ -16,12 +16,12 @@
           <input type="text" id="artist" v-model="form.artist" required>
         </div>
         <div class="form-group">
-          <label for="musicFile">音乐文件 (.mp3 / .wav)</label>
-          <input type="file" id="musicFile" accept=".mp3,.wav" @change="handleMusicFile" required>
+          <label for="musicFile">音乐文件（mp3 / wav / flac / ogg / m4a，最大 30MB）</label>
+          <input type="file" id="musicFile" accept=".mp3,.wav,.flac,.ogg,.m4a" @change="handleMusicFile" required>
         </div>
         <div class="form-group">
-          <label for="coverFile">封面图片</label>
-          <input type="file" id="coverFile" accept="image/*" @change="handleCoverFile">
+          <label for="coverFile">封面图片（jpg / png / webp / gif，最大 5MB）</label>
+          <input type="file" id="coverFile" accept=".jpg,.jpeg,.png,.webp,.gif" @change="handleCoverFile">
         </div>
         <button type="submit" class="btn" :disabled="isUploading">
           {{ isUploading ? '上传中...' : '上传音乐' }}
@@ -50,12 +50,29 @@ const isUploading = ref(false)
 
 const isLoggedIn = computed(() => userStore.isLoggedIn)
 
+const MUSIC_MAX_SIZE = 30 * 1024 * 1024 // 30MB
+const COVER_MAX_SIZE = 5 * 1024 * 1024 // 5MB
+
 const handleMusicFile = (event) => {
-  musicFile.value = event.target.files[0]
+  const file = event.target.files[0]
+  if (file && file.size > MUSIC_MAX_SIZE) {
+    alert('音乐文件不能超过 30MB')
+    event.target.value = ''
+    musicFile.value = null
+    return
+  }
+  musicFile.value = file
 }
 
 const handleCoverFile = (event) => {
-  coverFile.value = event.target.files[0]
+  const file = event.target.files[0]
+  if (file && file.size > COVER_MAX_SIZE) {
+    alert('封面图片不能超过 5MB')
+    event.target.value = ''
+    coverFile.value = null
+    return
+  }
+  coverFile.value = file
 }
 
 const uploadMusic = async () => {
@@ -75,16 +92,18 @@ const uploadMusic = async () => {
   isUploading.value = true
   
   try {
+    // 大文件上传耗时不可控，本次请求不套用全局 10s 超时
     await request.post(API_ENDPOINTS.MUSIC.UPLOAD, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
-      }
+      },
+      timeout: 0
     })
     alert('上传成功！')
     router.push('/')
   } catch (error) {
     console.error('上传失败:', error)
-    alert('上传失败，请稍后重试')
+    alert(error.response?.data?.error || '上传失败，请稍后重试')
   } finally {
     isUploading.value = false
   }
@@ -93,7 +112,7 @@ const uploadMusic = async () => {
 
 <style scoped>
 .upload-container {
-  height: 100vh;
+  height: calc(100vh - 60px);
   display: flex;
   justify-content: center;
   align-items: center;

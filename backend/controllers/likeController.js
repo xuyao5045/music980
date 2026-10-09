@@ -3,11 +3,21 @@ const { getPool } = require('../models/db')
 const likeController = {
   // 点赞或取消点赞
   async toggleLike(req, res) {
-    const { music_id } = req.body
+    const { music_id } = req.body || {}
     const user_id = req.user.id
     const pool = getPool()
-    
+
     try {
+      if (!music_id) {
+        return res.status(400).json({ error: '缺少 music_id 参数' })
+      }
+
+      // 确认音乐存在，避免外键错误被当成 500
+      const [musics] = await pool.execute('SELECT id FROM music WHERE id = ?', [music_id])
+      if (musics.length === 0) {
+        return res.status(404).json({ error: '音乐不存在' })
+      }
+
       // 检查是否已点赞
       const [existingLike] = await pool.execute('SELECT * FROM likes WHERE user_id = ? AND music_id = ?', [user_id, music_id])
       

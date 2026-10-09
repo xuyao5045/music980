@@ -9,7 +9,7 @@
       <!-- 左侧：歌曲信息 -->
       <div class="music-info-section">
         <div class="cover">
-          <img :src="getResourceUrl(currentMusic.cover_url) || '/default-cover.jpg'" :alt="currentMusic.title">
+          <img :src="getResourceUrl(currentMusic.cover_url) || '/default-cover.svg'" :alt="currentMusic.title">
         </div>
         <h1 class="title">{{ currentMusic.title }}</h1>
         <p class="artist">{{ currentMusic.artist }}</p>
@@ -70,6 +70,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useMusicStore } from '../stores/musicStore'
 import { useUserStore } from '../stores/userStore'
 import request from '../utils/request'
+import { formatTime } from '../utils/format'
 import { API_ENDPOINTS, getResourceUrl } from '../config/api'
 
 const musicStore = useMusicStore()
@@ -85,7 +86,6 @@ const isLoggedIn = computed(() => userStore.isLoggedIn)
 const user = computed(() => userStore.user)
 
 onMounted(async () => {
-  await userStore.fetchUser()
   await musicStore.fetchRandomMusic()
   if (currentMusic.value) {
     fetchComments()
@@ -128,20 +128,30 @@ const toggleLike = async () => {
       music_id: currentMusic.value.id
     })
     isLiked.value = !isLiked.value
-    // 重新获取音乐信息以更新点赞数
-    await musicStore.fetchRandomMusic()
+    // 本地更新点赞数，不打断当前播放列表
+    if (musicStore.currentMusic) {
+      musicStore.currentMusic.like_count = Math.max(
+        0,
+        Number(musicStore.currentMusic.like_count || 0) + (isLiked.value ? 1 : -1)
+      )
+    }
   } catch (error) {
     console.error('点赞失败:', error)
   }
 }
 
 const checkLikeStatus = async () => {
-  if (!isLoggedIn.value || !currentMusic.value) return
-  
+  // 未登录或切歌时先复位，避免残留上一首歌的点赞状态
+  if (!isLoggedIn.value || !currentMusic.value) {
+    isLiked.value = false
+    return
+  }
+
   try {
     const response = await request.get(`${API_ENDPOINTS.LIKE.CHECK}?music_id=${currentMusic.value.id}`)
     isLiked.value = response.is_liked
   } catch (error) {
+    isLiked.value = false
     console.error('检查点赞状态失败:', error)
   }
 }
@@ -183,25 +193,12 @@ const deleteComment = async (commentId) => {
   }
 }
 
-const formatTime = (timeString) => {
-  const date = new Date(timeString)
-  return date.toLocaleString()
-}
 </script>
-
-<style>
-/* 全局样式：禁止整个页面滚动 */
-html, body {
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-  height: 100%;
-}
-</style>
 
 <style scoped>
 .home-container {
-  height: 100vh;
+  /* 减去顶部导航栏高度，避免污染全局 overflow */
+  height: calc(100vh - 60px);
   display: flex;
   justify-content: center;
   align-items: flex-start;
